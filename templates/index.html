@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Story Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📰 News Story Analyzer</h1>
+            <p class="subtitle">Track news stories with timeline visualization and AI-powered summaries</p>
+        </header>
+
+        <div class="search-section">
+            <form id="searchForm">
+                <div class="form-group">
+                    <label for="keyword">Search Keyword</label>
+                    <input 
+                        type="text" 
+                        id="keyword" 
+                        name="keyword" 
+                        placeholder="e.g., artificial intelligence, climate change, election 2024"
+                        required
+                    >
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="days_back">Days to Look Back</label>
+                        <select id="days_back" name="days_back">
+                            <option value="7">Past Week</option>
+                            <option value="14">Past 2 Weeks</option>
+                            <option value="30" selected>Past Month</option>
+                            <option value="60">Past 2 Months</option>
+                            <option value="90">Past 3 Months</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="max_articles">Max Articles</label>
+                        <select id="max_articles" name="max_articles">
+                            <option value="10">10 articles</option>
+                            <option value="20" selected>20 articles</option>
+                            <option value="30">30 articles</option>
+                            <option value="50">50 articles</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary" id="searchBtn">
+                    <span id="btnText">🔍 Search News</span>
+                    <span id="btnLoading" class="hidden">⏳ Searching...</span>
+                </button>
+            </form>
+        </div>
+
+        <div id="loadingIndicator" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Fetching and analyzing news articles...</p>
+        </div>
+
+        <div id="errorMessage" class="error-message hidden"></div>
+
+        <div id="results" class="results hidden">
+            <div class="story-summary">
+                <h2>📊 Story Overview</h2>
+                <div id="storySummary"></div>
+                
+                <div class="coverage-stats" id="coverageStats"></div>
+            </div>
+
+            <div class="timeline-section">
+                <h2>📅 Timeline Visualization</h2>
+                <div id="timelineChart"></div>
+                <div id="timelineEvents" class="timeline-events"></div>
+            </div>
+
+            <div class="articles-section">
+                <h2>📑 Articles</h2>
+                <div id="articlesList" class="articles-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Built with Flask, GNews, and Plotly | News data from Google News</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
