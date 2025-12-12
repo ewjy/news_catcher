@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Keyword Timeline - Google News</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1.5.10/css/pico.min.css" />
+  <style>
+    .articles, .events { max-width: 1000px; margin: 1rem auto; }
+    .article, .event { padding: 0.5rem 0; border-bottom: 1px solid #eee; }
+    /* Timeline styles */
+    .timeline { max-width: 1000px; margin: 1rem auto; }
+    .timeline-scroll { overflow-x: auto; padding: 1rem 0; }
+    .timeline-track { position: relative; height: 320px; min-width: 900px; }
+    .timeline-axis { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: #e5e7eb; }
+    .timeline-marker { position: absolute; top: 50%; transform: translateX(-50%); }
+    .timeline-dot { width: 12px; height: 12px; border-radius: 50%; background: #2563eb; border: 2px solid #fff; box-shadow: 0 0 0 2px rgba(37,99,235,0.25); position: absolute; left: -6px; top: -6px; }
+    .timeline-stem { position: absolute; width: 2px; background: #cbd5e1; left: -1px; }
+    .timeline-card { position: absolute; width: 280px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .timeline-card a { text-decoration: none; color: #111827; }
+    .timeline-card a:hover { text-decoration: underline; }
+    .timeline-meta { font-size: 12px; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Keyword Timeline</h1>
+
+    <form id="searchForm">
+      <div class="grid">
+        <div>
+          <label for="keyword">Keyword</label>
+          <input type="text" id="keyword" name="keyword" placeholder="e.g. trump" required />
+        </div>
+        <div>
+          <label for="amount">Amount (max 2000)</label>
+          <input type="number" id="amount" name="amount" min="10" max="2000" value="50" />
+        </div>
+        <div>
+          <label for="granularity">Key event granularity</label>
+          <select id="granularity" name="granularity">
+            <option value="daily">Daily</option>
+            <option value="weekly" selected>Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+        <div>
+          <label for="timeRange">Time Range</label>
+          <select id="timeRange" name="timeRange">
+            <option value="past_24_hours">Past 24 hours</option>
+            <option value="past_week">Past week</option>
+            <option value="past_month" selected>Past month</option>
+            <option value="past_year">Past year</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid" id="customDates" style="display:none">
+        <div>
+          <label for="startDate">Start date</label>
+          <input type="date" id="startDate" name="startDate" />
+        </div>
+        <div>
+          <label for="endDate">End date</label>
+          <input type="date" id="endDate" name="endDate" />
+        </div>
+      </div>
+      <button type="submit">Fetch Timeline</button>
+    </form>
+
+    <section class="events">
+      <h3>Key Events Timeline</h3>
+      <div id="timeline"></div>
+    </section>
+
+    <section class="articles" id="articles"></section>
+  </main>
+
+  <script>
+    const timeRangeEl = document.getElementById('timeRange');
+    const customDatesEl = document.getElementById('customDates');
+    timeRangeEl.addEventListener('change', () => {
+      customDatesEl.style.display = timeRangeEl.value === 'custom' ? 'grid' : 'none';
+    });
+
+    function renderTimeline(keyEvents, granularity) {
+      const container = document.getElementById('timeline');
+      container.innerHTML = '';
+      const info = document.createElement('p');
+      info.style.opacity = 0.8;
+      info.textContent = `Showing ${granularity} key events`;
+      container.appendChild(info);
+
+      const scroll = document.createElement('div');
+      scroll.className = 'timeline-scroll';
+      const track = document.createElement('div');
+      track.className = 'timeline-track';
+      const axis = document.createElement('div');
+      axis.className = 'timeline-axis';
+      track.appendChild(axis);
+      scroll.appendChild(track);
+      container.appendChild(scroll);
+
+      if (!keyEvents.length) {
+        const empty = document.createElement('div');
+        empty.className = 'event';
+        empty.textContent = 'No events found for this range.';
+        container.appendChild(empty);
+        return;
+      }
+
+      // Compute track width based on date span
+      const start = new Date(window.__lastRange?.start || keyEvents[0].periodStart);
+      const end = new Date(window.__lastRange?.end || keyEvents[keyEvents.length-1].periodStart);
+      const spanMs = Math.max(1, end - start);
+      const days = spanMs / 86400000;
+      const trackWidth = Math.max(900, Math.min(20000, Math.round(days * 30))); // ~30px per day
+      track.style.width = trackWidth + 'px';
+
+      keyEvents.forEach((ev, idx) => {
+        const d = new Date(ev.periodStart);
+        const pos = Math.min(1, Math.max(0, (d - start) / spanMs));
+        const x = Math.round(pos * trackWidth);
+        const up = idx % 2 === 0; // alternate sides
+
+        const marker = document.createElement('div');
+        marker.className = 'timeline-marker';
+        marker.style.left = x + 'px';
+
+        const dot = document.createElement('div');
+        dot.className = 'timeline-dot';
+        marker.appendChild(dot);
+
+        const stem = document.createElement('div');
+        stem.className = 'timeline-stem';
+        stem.style.height = '70px';
+        stem.style.top = up ? '-70px' : '0px';
+        marker.appendChild(stem);
+
+        const card = document.createElement('div');
+        card.className = 'timeline-card';
+        card.style.top = up ? '-150px' : '80px';
+        const strong = document.createElement('strong');
+        const link = document.createElement('a');
+        link.href = ev.link;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = ev.title;
+        strong.appendChild(link);
+        const meta = document.createElement('div');
+        meta.className = 'timeline-meta';
+        meta.textContent = `${ev.periodStart} • coverage ${ev.clusterSize}`;
+        card.appendChild(strong);
+        card.appendChild(meta);
+        card.addEventListener('click', () => { if (ev.link) window.open(ev.link, '_blank', 'noopener'); });
+        marker.appendChild(card);
+
+        track.appendChild(marker);
+      });
+    }
+
+    function renderArticles(articles) {
+      const container = document.getElementById('articles');
+      container.innerHTML = '';
+      for (const a of articles) {
+        const div = document.createElement('div');
+        div.className = 'article';
+        div.innerHTML = `<strong><a href="${a.link}" target="_blank" rel="noopener">${a.title}</a></strong><br/>${a.published}${a.source ? ' • ' + a.source : ''}`;
+        container.appendChild(div);
+      }
+    }
+
+    function renderEventsList(keyEvents) {
+      const container = document.getElementById('eventsList');
+      container.innerHTML = '';
+      for (const e of keyEvents) {
+        const div = document.createElement('div');
+        div.className = 'event';
+        div.innerHTML = `<strong>${e.week}</strong> • <a href="${e.link}" target="_blank" rel="noopener">${e.title}</a> <span style="opacity:0.7">(coverage: ${e.clusterSize})</span>`;
+        container.appendChild(div);
+      }
+    }
+
+    document.getElementById('searchForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        keyword: document.getElementById('keyword').value,
+        amount: document.getElementById('amount').value,
+        granularity: document.getElementById('granularity').value,
+        timeRange: document.getElementById('timeRange').value,
+        startDate: document.getElementById('startDate').value || null,
+        endDate: document.getElementById('endDate').value || null,
+      };
+
+      const res = await fetch('/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Request failed');
+        return;
+      }
+      window.__lastRange = data.range || null;
+      renderTimeline(data.keyEvents || [], data.granularity || 'weekly');
+      renderArticles(data.articles);
+    });
+  </script>
+</body>
+</html>
