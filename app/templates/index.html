@@ -1,82 +1,521 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Keyword Timeline - Google News</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1.5.10/css/pico.min.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>News Timeline - Global News Analysis</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
   <style>
-    .articles, .events { max-width: 1000px; margin: 1rem auto; }
-    .article, .event { padding: 0.5rem 0; border-bottom: 1px solid #eee; }
-    /* Timeline styles */
-    .timeline { max-width: 1000px; margin: 1rem auto; }
-    .timeline-scroll { overflow-x: auto; padding: 1rem 0; }
-    .timeline-track { position: relative; height: 320px; min-width: 900px; }
-    .timeline-axis { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: #e5e7eb; }
-    .timeline-marker { position: absolute; top: 50%; transform: translateX(-50%); }
-    .timeline-dot { width: 12px; height: 12px; border-radius: 50%; background: #2563eb; border: 2px solid #fff; box-shadow: 0 0 0 2px rgba(37,99,235,0.25); position: absolute; left: -6px; top: -6px; }
-    .timeline-stem { position: absolute; width: 2px; background: #cbd5e1; left: -1px; }
-    .timeline-card { position: absolute; width: 280px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-    .timeline-card a { text-decoration: none; color: #111827; }
-    .timeline-card a:hover { text-decoration: underline; }
-    .timeline-meta { font-size: 12px; color: #6b7280; }
+    :root {
+      --primary-color: #2563eb;
+      --secondary-color: #64748b;
+      --success-color: #10b981;
+      --danger-color: #ef4444;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #1f2937;
+    }
+
+    .navbar {
+      background: linear-gradient(90deg, var(--primary-color) 0%, #1e40af 100%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .navbar-brand {
+      font-weight: 700;
+      font-size: 1.5rem;
+      letter-spacing: -0.5px;
+    }
+
+    .container-main {
+      max-width: 1400px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .card {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
+      color: white;
+      font-weight: 600;
+      border-radius: 12px 12px 0 0 !important;
+      padding: 1.5rem;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      border: none;
+      font-weight: 600;
+      padding: 0.65rem 2rem;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      background-color: #1d4ed8;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+    }
+
+    .form-control,
+    .form-select {
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      transition: border-color 0.3s ease;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
+    }
+
+    .source-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .source-checkbox {
+      display: none;
+    }
+
+    .source-label {
+      display: inline-block;
+      padding: 0.55rem 1.2rem;
+      background: #f3f4f6;
+      border: 2px solid #d1d5db;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+      user-select: none;
+      transition: all 0.2s ease;
+    }
+
+    .source-label:hover {
+      background: #e5e7eb;
+      border-color: #9ca3af;
+    }
+
+    .source-checkbox:checked + .source-label {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+      color: white;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    /* Horizontal Timeline Styles */
+    .timeline-container { overflow-x: auto; padding-bottom: 1rem; }
+    .timeline-track { display: flex; gap: 1rem; padding: 1rem 0; min-width: 900px; }
+    .timeline-card { flex: 0 0 360px; background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem; box-shadow: 0 4px 16px rgba(0,0,0,0.06); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .timeline-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+    .timeline-date { font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem; }
+    .timeline-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .timeline-title a { color: var(--primary-color); text-decoration: none; }
+    .timeline-title a:hover { text-decoration: underline; }
+    .timeline-summary { font-size: 0.95rem; color: #374151; margin-bottom: 0.75rem; }
+    .timeline-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.85rem; color: var(--secondary-color); }
+    .timeline-badge { background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.4rem; }
+
+    .event-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 0.75rem;
+    }
+
+    .event-title a {
+      color: var(--primary-color);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .event-title a:hover {
+      color: #1d4ed8;
+      text-decoration: underline;
+    }
+
+    .event-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      font-size: 0.95rem;
+      color: var(--secondary-color);
+    }
+
+    .badge-metric {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #f3f4f6;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+
+    .badge-metric.importance {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%);
+      color: var(--primary-color);
+    }
+
+    .articles-section {
+      margin-top: 3rem;
+    }
+
+    .article-item {
+      background: white;
+      border-left: 4px solid var(--primary-color);
+      border-radius: 6px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .article-item:hover {
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.1);
+      transform: translateX(4px);
+    }
+
+    .article-title {
+      font-weight: 600;
+      color: var(--primary-color);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 0.5rem;
+      transition: color 0.2s ease;
+    }
+
+    .article-title:hover {
+      color: #1d4ed8;
+      text-decoration: underline;
+    }
+
+    .article-meta {
+      font-size: 0.9rem;
+      color: var(--secondary-color);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--secondary-color);
+    }
+
+    .empty-state i {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .spinner-border {
+      color: var(--primary-color);
+    }
+
+    @media (max-width: 768px) {
+      .event-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      
+      .source-filter {
+        gap: 0.5rem;
+      }
+      
+      .source-label {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+      }
+    }
   </style>
 </head>
 <body>
-  <main class="container">
-    <h1>Keyword Timeline</h1>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">
+        <i class="fas fa-newspaper me-2"></i>News Timeline
+      </a>
+      <span class="navbar-text text-light">Global News Analysis & Insights</span>
+    </div>
+  </nav>
 
-    <form id="searchForm">
-      <div class="grid">
-        <div>
-          <label for="keyword">Keyword</label>
-          <input type="text" id="keyword" name="keyword" placeholder="e.g. trump" required />
-        </div>
-        <div>
-          <label for="amount">Amount (max 2000)</label>
-          <input type="number" id="amount" name="amount" min="10" max="2000" value="50" />
-        </div>
-        <div>
-          <label for="granularity">Key event granularity</label>
-          <select id="granularity" name="granularity">
-            <option value="daily">Daily</option>
-            <option value="weekly" selected>Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
-        </div>
-        <div>
-          <label for="timeRange">Time Range</label>
-          <select id="timeRange" name="timeRange">
-            <option value="past_24_hours">Past 24 hours</option>
-            <option value="past_week">Past week</option>
-            <option value="past_month" selected>Past month</option>
-            <option value="past_year">Past year</option>
-            <option value="custom">Custom</option>
-          </select>
+  <!-- Main Container -->
+  <div class="container-main">
+    <!-- API Key Setup Banner -->
+    <div id="apiKeyBanner" class="alert alert-info alert-dismissible fade show" role="alert" style="display: none;">
+      <i class="fas fa-key me-2"></i>
+      <strong>NewsAPI Key Required:</strong> Enter your NewsAPI key below to use this application.
+      <a href="https://newsapi.org/register" target="_blank" class="alert-link">Get free API key</a>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Search Card -->
+    <div class="row mb-4">
+      <div class="col-lg-12">
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-search me-2"></i>Search News
+          </div>
+          <div class="card-body">
+            <form id="searchForm">
+              <!-- API Key Input -->
+              <div class="row g-3 mb-4">
+                <div class="col-lg-12">
+                  <label for="apiKey" class="form-label fw-600">
+                    <i class="fas fa-key me-2"></i>NewsAPI Key
+                  </label>
+                  <div class="input-group">
+                    <input type="password" class="form-control" id="apiKey" name="apiKey" 
+                           placeholder="Enter your NewsAPI key (from https://newsapi.org/register)" />
+                    <button class="btn btn-outline-secondary" type="button" id="toggleApiKey" title="Show/Hide">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-success" type="button" id="saveApiKey" title="Save locally">
+                      <i class="fas fa-save me-1"></i>Save
+                    </button>
+                  </div>
+                  <small class="text-muted d-block mt-2">
+                    <i class="fas fa-info-circle me-1"></i>Your key is stored locally in your browser. Never shared.
+                  </small>
+                </div>
+              </div>
+
+              <hr class="my-4" />
+
+              <!-- Search Parameters -->
+                <div class="col-lg-6">
+                  <label for="keyword" class="form-label fw-600">Keyword</label>
+                  <input type="text" class="form-control" id="keyword" name="keyword" 
+                         placeholder="e.g. artificial intelligence, climate change" required />
+                </div>
+                <div class="col-lg-3">
+                  <label for="amount" class="form-label fw-600">Articles</label>
+                  <input type="number" class="form-control" id="amount" name="amount" 
+                         min="10" max="5000" value="100" />
+                </div>
+                <div class="col-lg-3">
+                  <label for="granularity" class="form-label fw-600">Granularity</label>
+                  <select class="form-select" id="granularity" name="granularity">
+                    <option value="daily">Daily</option>
+                    <option value="weekly" selected>Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-3 mb-4">
+                <div class="col-lg-6">
+                  <label for="timeRange" class="form-label fw-600">Time Range</label>
+                  <select class="form-select" id="timeRange" name="timeRange">
+                    <option value="past_24_hours">Past 24 hours</option>
+                    <option value="past_week">Past week</option>
+                    <option value="past_month" selected>Past month</option>
+                    <option value="past_year">Past year</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-3 mb-4" id="customDates" style="display: none;">
+                <div class="col-lg-3">
+                  <label for="startDate" class="form-label fw-600">Start Date</label>
+                  <input type="date" class="form-control" id="startDate" name="startDate" />
+                </div>
+                <div class="col-lg-3">
+                  <label for="endDate" class="form-label fw-600">End Date</label>
+                  <input type="date" class="form-control" id="endDate" name="endDate" />
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label fw-600">Filter by Sources (Optional)</label>
+                <div class="source-filter">
+                  <input type="checkbox" id="src-bbc" class="source-checkbox" value="BBC" />
+                  <label for="src-bbc" class="source-label">BBC</label>
+
+                  <input type="checkbox" id="src-reuters" class="source-checkbox" value="Reuters" />
+                  <label for="src-reuters" class="source-label">Reuters</label>
+
+                  <input type="checkbox" id="src-apnews" class="source-checkbox" value="AP News" />
+                  <label for="src-apnews" class="source-label">AP News</label>
+
+                  <input type="checkbox" id="src-dw" class="source-checkbox" value="Deutsche Welle" />
+                  <label for="src-dw" class="source-label">DW</label>
+
+                  <input type="checkbox" id="src-france24" class="source-checkbox" value="France 24" />
+                  <label for="src-france24" class="source-label">France 24</label>
+
+                  <input type="checkbox" id="src-nyt" class="source-checkbox" value="New York Times" />
+                  <label for="src-nyt" class="source-label">NYT</label>
+
+                  <input type="checkbox" id="src-wsj" class="source-checkbox" value="Wall Street Journal" />
+                  <label for="src-wsj" class="source-label">WSJ</label>
+
+                  <input type="checkbox" id="src-wapo" class="source-checkbox" value="Washington Post" />
+                  <label for="src-wapo" class="source-label">WaPo</label>
+
+                  <input type="checkbox" id="src-guardian" class="source-checkbox" value="The Guardian" />
+                  <label for="src-guardian" class="source-label">Guardian</label>
+
+                  <input type="checkbox" id="src-ft" class="source-checkbox" value="Financial Times" />
+                  <label for="src-ft" class="source-label">FT</label>
+
+                  <input type="checkbox" id="src-economist" class="source-checkbox" value="The Economist" />
+                  <label for="src-economist" class="source-label">Economist</label>
+
+                  <input type="checkbox" id="src-aljazeera" class="source-checkbox" value="Al Jazeera" />
+                  <label for="src-aljazeera" class="source-label">Al Jazeera</label>
+
+                  <input type="checkbox" id="src-cnn" class="source-checkbox" value="CNN" />
+                  <label for="src-cnn" class="source-label">CNN</label>
+
+                  <input type="checkbox" id="src-bloomberg" class="source-checkbox" value="Bloomberg" />
+                  <label for="src-bloomberg" class="source-label">Bloomberg</label>
+
+                  <input type="checkbox" id="src-bbc-news" class="source-checkbox" value="BBC News" />
+                  <label for="src-bbc-news" class="source-label">BBC News</label>
+
+                  <input type="checkbox" id="src-other" class="source-checkbox" value="Other" />
+                  <label for="src-other" class="source-label">Other</label>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-search me-2"></i>Analyze News
+              </button>
+            </form>
+          </div>
         </div>
       </div>
-      <div class="grid" id="customDates" style="display:none">
-        <div>
-          <label for="startDate">Start date</label>
-          <input type="date" id="startDate" name="startDate" />
-        </div>
-        <div>
-          <label for="endDate">End date</label>
-          <input type="date" id="endDate" name="endDate" />
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="loading">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-3">Fetching and analyzing news...</p>
+    </div>
+
+    <!-- Timeline Section -->
+    <div id="timelineSection" class="row mb-4" style="display: none;">
+      <div class="col-lg-12">
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-timeline me-2"></i><span id="timelineTitle">Key Events Timeline</span>
+          </div>
+          <div class="card-body">
+            <div id="timeline" class="timeline"></div>
+          </div>
         </div>
       </div>
-      <button type="submit">Fetch Timeline</button>
-    </form>
+    </div>
 
-    <section class="events">
-      <h3>Key Events Timeline</h3>
-      <div id="timeline"></div>
-    </section>
+    <!-- Articles Section -->
+    <div id="articlesSection" class="row" style="display: none;">
+      <div class="col-lg-12">
+        <div class="card articles-section">
+          <div class="card-header">
+            <i class="fas fa-list me-2"></i>Articles
+          </div>
+          <div class="card-body">
+            <div id="articles"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <section class="articles" id="articles"></section>
-  </main>
+  <!-- Footer -->
+  <footer class="bg-dark text-white text-center py-4 mt-5">
+    <div class="container">
+      <p class="mb-1">News Timeline - Global News Analysis</p>
+      <p class="text-muted small">Powered by NewsAPI</p>
+    </div>
+  </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    // API Key Management
+    const API_KEY_STORAGE = 'newsapi_key';
+
+    function loadApiKey() {
+      const saved = localStorage.getItem(API_KEY_STORAGE);
+      if (saved) {
+        document.getElementById('apiKey').value = saved;
+      }
+      checkApiKeyStatus();
+    }
+
+    function checkApiKeyStatus() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const banner = document.getElementById('apiKeyBanner');
+      if (!apiKey) {
+        banner.style.display = 'block';
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+
+    document.getElementById('saveApiKey').addEventListener('click', (e) => {
+      e.preventDefault();
+      const apiKey = document.getElementById('apiKey').value.trim();
+      if (!apiKey) {
+        alert('Please enter an API key');
+        return;
+      }
+      localStorage.setItem(API_KEY_STORAGE, apiKey);
+      alert('API key saved locally!');
+      checkApiKeyStatus();
+    });
+
+    document.getElementById('toggleApiKey').addEventListener('click', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('apiKey');
+      const btn = document.getElementById('toggleApiKey');
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+      } else {
+        input.type = 'password';
+        btn.innerHTML = '<i class="fas fa-eye"></i>';
+      }
+    });
+
+    // Load API key on page load
+    window.addEventListener('load', loadApiKey);
+
     const timeRangeEl = document.getElementById('timeRange');
     const customDatesEl = document.getElementById('customDates');
     timeRangeEl.addEventListener('change', () => {
@@ -86,111 +525,125 @@
     function renderTimeline(keyEvents, granularity) {
       const container = document.getElementById('timeline');
       container.innerHTML = '';
-      const info = document.createElement('p');
-      info.style.opacity = 0.8;
-      info.textContent = `Showing ${granularity} key events`;
-      container.appendChild(info);
-
-      const scroll = document.createElement('div');
-      scroll.className = 'timeline-scroll';
-      const track = document.createElement('div');
-      track.className = 'timeline-track';
-      const axis = document.createElement('div');
-      axis.className = 'timeline-axis';
-      track.appendChild(axis);
-      scroll.appendChild(track);
-      container.appendChild(scroll);
 
       if (!keyEvents.length) {
         const empty = document.createElement('div');
-        empty.className = 'event';
-        empty.textContent = 'No events found for this range.';
+        empty.className = 'empty-state';
+        empty.innerHTML = `<i class="fas fa-inbox"></i><p>No events found for this range.</p>`;
         container.appendChild(empty);
         return;
       }
 
-      // Compute track width based on date span
-      const start = new Date(window.__lastRange?.start || keyEvents[0].periodStart);
-      const end = new Date(window.__lastRange?.end || keyEvents[keyEvents.length-1].periodStart);
-      const spanMs = Math.max(1, end - start);
-      const days = spanMs / 86400000;
-      const trackWidth = Math.max(900, Math.min(20000, Math.round(days * 30))); // ~30px per day
-      track.style.width = trackWidth + 'px';
+      const scroll = document.createElement('div');
+      scroll.className = 'timeline-container';
+      const track = document.createElement('div');
+      track.className = 'timeline-track';
 
-      keyEvents.forEach((ev, idx) => {
-        const d = new Date(ev.periodStart);
-        const pos = Math.min(1, Math.max(0, (d - start) / spanMs));
-        const x = Math.round(pos * trackWidth);
-        const up = idx % 2 === 0; // alternate sides
-
-        const marker = document.createElement('div');
-        marker.className = 'timeline-marker';
-        marker.style.left = x + 'px';
-
-        const dot = document.createElement('div');
-        dot.className = 'timeline-dot';
-        marker.appendChild(dot);
-
-        const stem = document.createElement('div');
-        stem.className = 'timeline-stem';
-        stem.style.height = '70px';
-        stem.style.top = up ? '-70px' : '0px';
-        marker.appendChild(stem);
-
+      keyEvents.forEach(ev => {
         const card = document.createElement('div');
         card.className = 'timeline-card';
-        card.style.top = up ? '-150px' : '80px';
-        const strong = document.createElement('strong');
+
+        const date = document.createElement('div');
+        date.className = 'timeline-date';
+        date.textContent = ev.periodStart;
+        card.appendChild(date);
+
+        const title = document.createElement('div');
+        title.className = 'timeline-title';
         const link = document.createElement('a');
         link.href = ev.link;
         link.target = '_blank';
         link.rel = 'noopener';
         link.textContent = ev.title;
-        strong.appendChild(link);
+        title.appendChild(link);
+        card.appendChild(title);
+
+        if (ev.summary) {
+          const summary = document.createElement('div');
+          summary.className = 'timeline-summary';
+          summary.textContent = ev.summary;
+          card.appendChild(summary);
+        }
+
         const meta = document.createElement('div');
         meta.className = 'timeline-meta';
-        meta.textContent = `${ev.periodStart} • coverage ${ev.clusterSize}`;
-        card.appendChild(strong);
-        card.appendChild(meta);
-        card.addEventListener('click', () => { if (ev.link) window.open(ev.link, '_blank', 'noopener'); });
-        marker.appendChild(card);
 
-        track.appendChild(marker);
+        const coverage = document.createElement('span');
+        coverage.className = 'timeline-badge';
+        coverage.innerHTML = `<i class="fas fa-newspaper"></i> ${ev.clusterSize} articles`;
+        meta.appendChild(coverage);
+
+        const sources = document.createElement('span');
+        sources.className = 'timeline-badge';
+        sources.innerHTML = `<i class="fas fa-building"></i> ${ev.uniqueSources} sources`;
+        meta.appendChild(sources);
+
+        const importance = document.createElement('span');
+        importance.className = 'timeline-badge';
+        importance.innerHTML = `<i class="fas fa-star"></i> ${ev.importanceScore}`;
+        meta.appendChild(importance);
+
+        card.appendChild(meta);
+        track.appendChild(card);
       });
+
+      scroll.appendChild(track);
+      container.appendChild(scroll);
     }
 
     function renderArticles(articles) {
       const container = document.getElementById('articles');
       container.innerHTML = '';
-      for (const a of articles) {
-        const div = document.createElement('div');
-        div.className = 'article';
-        div.innerHTML = `<strong><a href="${a.link}" target="_blank" rel="noopener">${a.title}</a></strong><br/>${a.published}${a.source ? ' • ' + a.source : ''}`;
-        container.appendChild(div);
-      }
-    }
 
-    function renderEventsList(keyEvents) {
-      const container = document.getElementById('eventsList');
-      container.innerHTML = '';
-      for (const e of keyEvents) {
-        const div = document.createElement('div');
-        div.className = 'event';
-        div.innerHTML = `<strong>${e.week}</strong> • <a href="${e.link}" target="_blank" rel="noopener">${e.title}</a> <span style="opacity:0.7">(coverage: ${e.clusterSize})</span>`;
-        container.appendChild(div);
+      if (!articles.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.innerHTML = `<i class="fas fa-search"></i><p>No articles found.</p>`;
+        container.appendChild(empty);
+        return;
       }
+
+      articles.forEach((a) => {
+        const div = document.createElement('div');
+        div.className = 'article-item';
+        div.innerHTML = `
+          <a href="${a.link}" target="_blank" rel="noopener" class="article-title">${a.title}</a>
+          <div class="article-meta">
+            <span><i class="fas fa-clock"></i> ${a.published}</span>
+            ${a.source ? `<span><i class="fas fa-building"></i> ${a.source}</span>` : ''}
+          </div>
+        `;
+        container.appendChild(div);
+      });
     }
 
     document.getElementById('searchForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      const apiKey = document.getElementById('apiKey').value.trim();
+      if (!apiKey) {
+        alert('Please enter your NewsAPI key first');
+        document.getElementById('apiKey').focus();
+        return;
+      }
+
+      const sourceCheckboxes = document.querySelectorAll('.source-checkbox:checked');
+      const selectedSources = Array.from(sourceCheckboxes).map(cb => cb.value);
+
       const payload = {
+        apiKey: apiKey,
         keyword: document.getElementById('keyword').value,
         amount: document.getElementById('amount').value,
         granularity: document.getElementById('granularity').value,
         timeRange: document.getElementById('timeRange').value,
         startDate: document.getElementById('startDate').value || null,
         endDate: document.getElementById('endDate').value || null,
+        sources: selectedSources,
       };
+
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('timelineSection').style.display = 'none';
+      document.getElementById('articlesSection').style.display = 'none';
 
       const res = await fetch('/search', {
         method: 'POST',
@@ -198,14 +651,22 @@
         body: JSON.stringify(payload),
       });
 
+      document.getElementById('loading').style.display = 'none';
+
       const data = await res.json();
       if (!res.ok) {
         alert(data.error || 'Request failed');
         return;
       }
-      window.__lastRange = data.range || null;
+
+      document.getElementById('timelineTitle').textContent = 
+        `Key Events Timeline (${data.granularity})`;
       renderTimeline(data.keyEvents || [], data.granularity || 'weekly');
       renderArticles(data.articles);
+
+      document.getElementById('timelineSection').style.display = 'block';
+      document.getElementById('articlesSection').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   </script>
 </body>
